@@ -1,108 +1,64 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: Arial, sans-serif;
-  background-color: #87CEEB; /* Color azul cielo */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
-
-#game-container {
+/* Estilos para el formulario de inicio de sesión */
+#login-container {
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-top: 50px;
 }
 
-#game-area {
-  width: 80vw;
-  height: 60vh;
-  background-color: #e0f7fa; /* Fondo del área de juego */
-  border: 2px solid #000;
-  position: relative;
-  overflow: hidden;
-}
-
-#controls {
-  margin-top: 20px;
-}
-
-button {
+#login-container input {
+  width: 300px;
   padding: 10px;
-  margin: 5px;
-  font-size: 16px;
+  margin: 5px 0;
 }
 
-#green-btn {
-  background-color: #4CAF50;
+#login-btn {
+  padding: 10px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  cursor: pointer;
 }
 
-#red-btn {
-  background-color: #f44336;
+#login-btn:hover {
+  background-color: #218838;
 }
 
-#yellow-btn {
-  background-color: #FFEB3B;
+/* Ocultar el conejo y el chat por defecto */
+#conejo-container, #chat-container {
+  display: none;
+  text-align: center;
+  margin-top: 30px;
 }
 
-#blue-btn {
-  background-color: #00BCD4;
+/* Estilos para el conejo pixelart */
+#conejo-pixelart {
+  width: 150px;
+  height: 150px;
 }
 
-#gray-btn {
-  background-color: #9E9E9E;
+/* Estilos para el chat */
+#chat-container textarea {
+  width: 300px;
+  height: 100px;
+  padding: 10px;
+  margin-top: 10px;
 }
 
-.aldeano {
-  width: 30px;
-  height: 30px;
-  position: absolute;
+#send-btn {
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
 }
 
-.aldeano.verde {
-  background-color: #4CAF50;
+#send-btn:hover {
+  background-color: #0056b3;
 }
 
-.aldeano.rojo {
-  background-color: #f44336;
-}
-
-.comida {
-  width: 20px;
-  height: 20px;
-  background-color: #FFEB3B;
-  position: absolute;
-}
-
-.agua {
-  width: 20px;
-  height: 20px;
-  background-color: #00BCD4;
-  position: absolute;
-}
-
-.piedra {
-  width: 20px;
-  height: 20px;
-  background-color: #9E9E9E;
-  position: absolute;
-}
-
-.bar {
-  height: 5px;
-  background-color: #FFEB3B; /* Amarillo para hambre */
-  position: absolute;
-}
-
-.hambre {
-  background-color: #FFEB3B; /* Amarillo */
-}
-
-.sed {
-  background-color: #00BCD4; /* Azul */
+#chat-response {
+  margin-top: 20px;
+  font-size: 18px;
+  color: #333;
 }
