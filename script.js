@@ -59,51 +59,57 @@ document.getElementById('login-btn').addEventListener('click', () => {
   }
 });
 
-// Lógica para enviar preguntas a ChatGPT
-document.getElementById('send-btn').addEventListener('click', async () => {
-  const userInput = document.getElementById('user-input').value;
+// Inicializamos la conversación
+let chatHistory = [];
 
-  if (!userInput) return; // No enviar si el campo está vacío
+// Función para agregar mensajes al chat
+function addMessage(sender, message) {
+    const chatContainer = document.getElementById('chat-container');
+    const messageElement = document.createElement('div');
+    messageElement.textContent = `${sender}: ${message}`;
+    chatContainer.appendChild(messageElement);
+    chatContainer.scrollTop = chatContainer.scrollHeight; // Desplazarse hacia abajo
+}
 
-  // Muestra que el mensaje está siendo procesado
-  document.getElementById('chat-response').textContent = 'Ciber Conejo Bonny está pensando...';
+// Función para manejar el envío de mensajes
+document.getElementById('send-btn').addEventListener('click', () => {
+    const userInput = document.getElementById('user-input').value;
+    if (userInput.trim() === '') return; // Evitar enviar mensajes vacíos
 
-  // Prepara el mensaje para ChatGPT
-  const mensaje = {
-    model: "gpt-3.5-turbo", // o "gpt-4" si tienes acceso a GPT-4
-    messages: [
-      { role: "system", content: "Actúa como el Ciber Conejo Bonny, aquí te enviaré toda la conversación previa y la última pregunta." },
-      { role: "user", content: userInput }
-    ]
-  };
+    addMessage("Tú", userInput);
+    chatHistory.push({ user: userInput }); // Guardar entrada del usuario
 
-  try {
-    // Petición a la API de OpenAI
-    const response = await axios.post('https://api.openai.com/v1/chat/completions', mensaje, {
-      headers: {
-        'Authorization': `Bearer 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`, // Tu API Key
-        'Content-Type': 'application/json'
-      }
-    });
+    // Obtener respuesta de Boony
+    const boonyResponse = processQuestion(userInput);
+    addMessage("Boony", boonyResponse);
+    chatHistory.push({ bot: boonyResponse }); // Guardar respuesta del bot
 
-    // Obtener la respuesta de ChatGPT
-    const gptResponse = response.data.choices[0].message.content;
-
-    // Mostrar la respuesta en la página
-    document.getElementById('chat-response').textContent = `Ciber Conejo Bonny: ${gptResponse}`;
-
-    // Guarda la conversación en Firestore
-    await db.collection('conversaciones').add({
-      pregunta: userInput,
-      respuesta: gptResponse,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    console.log("Conversación guardada exitosamente!");
-  } catch (error) {
-    console.error('Error al conectar con ChatGPT:', error);
-    document.getElementById('chat-response').textContent = 'Error al conectar con Ciber Conejo Bonny. Inténtalo de nuevo.';
-  }
-
-  // Limpiar el campo de entrada
-  document.getElementById('user-input').value = '';
+    // Limpiar el campo de entrada
+    document.getElementById('user-input').value = '';
 });
+
+// Función para guardar y cargar conversaciones en Local Storage
+function saveChat() {
+    localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+}
+
+function loadChat() {
+    const savedChat = localStorage.getItem('chatHistory');
+    if (savedChat) {
+        chatHistory = JSON.parse(savedChat);
+        chatHistory.forEach(entry => {
+            if (entry.user) {
+                addMessage("Tú", entry.user);
+            }
+            if (entry.bot) {
+                addMessage("Boony", entry.bot);
+            }
+        });
+    }
+}
+
+// Cargar la conversación guardada al iniciar
+loadChat();
+
+// Guardar la conversación cada vez que se envía un mensaje
+window.addEventListener('beforeunload', saveChat);
