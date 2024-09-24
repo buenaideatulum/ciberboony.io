@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juego Sencillo tipo Worldbox</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="game-container">
+    <div id="game-area"></div>
+    <div id="controls">
+      <button id="green-btn">Generar Aldeano Verde</button>
+      <button id="red-btn">Generar Aldeano Rojo</button>
+      <button id="yellow-btn">Generar Comida</button>
+      <button id="blue-btn">Generar Agua</button>
+      <button id="gray-btn">Generar Piedras</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #87CEEB; /* Color azul cielo */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+#game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#game-area {
+  width: 80vw;
+  height: 60vh;
+  background-color: #e0f7fa; /* Fondo del área de juego */
+  border: 2px solid #000;
+  position: relative;
+  overflow: hidden;
+}
+
+#controls {
+  margin-top: 20px;
+}
+
+button {
+  padding: 10px;
+  margin: 5px;
+  font-size: 16px;
+}
+
+#green-btn {
+  background-color: #4CAF50;
+}
+
+#red-btn {
+  background-color: #f44336;
+}
+
+#yellow-btn {
+  background-color: #FFEB3B;
+}
+
+#blue-btn {
+  background-color: #00BCD4;
+}
+
+#gray-btn {
+  background-color: #9E9E9E;
+}
+
+.aldeano {
+  width: 30px;
+  height: 30px;
+  position: absolute;
+}
+
+.aldeano.verde {
+  background-color: #4CAF50;
+}
+
+.aldeano.rojo {
+  background-color: #f44336;
+}
+
+.comida {
+  width: 20px;
+  height: 20px;
+  background-color: #FFEB3B;
+  position: absolute;
+}
+
+.agua {
+  width: 20px;
+  height: 20px;
+  background-color: #00BCD4;
+  position: absolute;
+}
+
+.piedra {
+  width: 20px;
+  height: 20px;
+  background-color: #9E9E9E;
+  position: absolute;
+}
+
+.bar {
+  height: 5px;
+  background-color: #FFEB3B; /* Amarillo para hambre */
+  position: absolute;
+}
+
+.hambre {
+  background-color: #FFEB3B; /* Amarillo */
+}
+
+.sed {
+  background-color: #00BCD4; /* Azul */
+}
