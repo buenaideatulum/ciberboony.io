@@ -3,21 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Juego Sencillo tipo Worldbox</title>
+  <title>Ciber Conejo Bonny</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="game-container">
-    <div id="game-area"></div>
-    <div id="controls">
-      <button id="green-btn">Generar Aldeano Verde</button>
-      <button id="red-btn">Generar Aldeano Rojo</button>
-      <button id="yellow-btn">Generar Comida</button>
-      <button id="blue-btn">Generar Agua</button>
-      <button id="gray-btn">Generar Piedras</button>
-    </div>
+  <div id="login-container">
+    <input type="email" id="email" placeholder="Correo electrónico">
+    <input type="password" id="password" placeholder="Contraseña">
+    <button id="login-btn">Iniciar sesión</button>
+    <p id="login-error" style="color:red;"></p>
   </div>
 
+  <!-- Contenedor para el conejo pixelart -->
+  <div id="conejo-container">
+    <img src="conejo.png" alt="Ciber Conejo Bonny" id="conejo-pixelart">
+  </div>
+
+  <!-- Contenedor para el chat -->
+  <div id="chat-container">
+    <textarea id="user-input" placeholder="Escribe tu pregunta aquí..."></textarea>
+    <button id="send-btn">Enviar</button>
+    <p id="chat-response"></p>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
