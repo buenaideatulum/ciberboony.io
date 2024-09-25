@@ -1,64 +1,44 @@
-/* Estilos para el formulario de inicio de sesión */
-#login-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 50px;
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
 }
 
-#login-container input {
-  width: 300px;
-  padding: 10px;
-  margin: 5px 0;
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-#login-btn {
-  padding: 10px;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  cursor: pointer;
+textarea {
+    width: 300px;
+    height: 100px;
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
 }
 
-#login-btn:hover {
-  background-color: #218838;
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #4CAF50;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
 }
 
-/* Ocultar el conejo y el chat por defecto */
-#conejo-container, #chat-container {
-  display: none;
-  text-align: center;
-  margin-top: 30px;
-}
-
-/* Estilos para el conejo pixelart */
-#conejo-pixelart {
-  width: 150px;
-  height: 150px;
-}
-
-/* Estilos para el chat */
-#chat-container textarea {
-  width: 300px;
-  height: 100px;
-  padding: 10px;
-  margin-top: 10px;
-}
-
-#send-btn {
-  padding: 10px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-#send-btn:hover {
-  background-color: #0056b3;
-}
-
-#chat-response {
-  margin-top: 20px;
-  font-size: 18px;
-  color: #333;
+.response {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #fff;
+    width: 300px;
+    min-height: 50px;
 }
