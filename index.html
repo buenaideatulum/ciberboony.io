@@ -1,35 +1,17 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ciber Conejo Bonny</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pony Chat</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="login-container">
-    <input type="email" id="email" placeholder="Correo electrónico">
-    <input type="password" id="password" placeholder="Contraseña">
-    <button id="login-btn">Iniciar sesión</button>
-    <p id="login-error" style="color:red;"></p>
-  </div>
-
-  <!-- Contenedor para el conejo pixelart -->
-  <div id="conejo-container" style="display: none;">
-    <img src="conejo.png" alt="Ciber Conejo Bonny" id="conejo-pixelart">
-  </div>
-
-  <!-- Contenedor para el chat -->
-  <div id="chat-container" style="display: none;">
-    <textarea id="user-input" placeholder="Escribe tu pregunta aquí..."></textarea>
-    <button id="send-btn">Enviar</button>
-    <div id="chat-history" style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc;"></div>
-  </div>
-
-  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
-  <script src="boony.js"></script>
-  <script src="script.js"></script>
+    <div class="chat-container">
+        <textarea id="userMessage" placeholder="Escribe tu mensaje..."></textarea>
+        <button id="sendButton">Enviar</button>
+        <div id="responseContainer" class="response"></div>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>
