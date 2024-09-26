@@ -1,38 +1,49 @@
-const sendButton = document.getElementById("sendButton");
-const userMessage = document.getElementById("userMessage");
-const responseContainer = document.getElementById("responseContainer");
+const API_KEY = "sk-gQcVS604xvhVlwGqoFuRiOxwciM20JvJp0ySv6NFOwT3BlbkFJSv04-BBv_yZ-XqqDjt0zLbjwEtqkibjb6aCtB5mlwA";
 
-sendButton.addEventListener("click", async () => {
-    const message = userMessage.value;
-    if (message) {
-        responseContainer.innerHTML = "Cargando...";
-        try {
-            const response = await fetch("https://api.openai.com/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer sk-svcacct-MZsF_NJu5qCcH4sqAogE1VYvNhnUIx77ptbJ6luqOn3Jml0IDod9Xnt-TtNHzWT3BlbkFJ4MbzpXoi1ueaJ6iw4tM-GPWLQzrE48QjG7Vgk5so8OvwqGm6Gg-8H7dIdvUDEA" // Reemplaza con tu clave API
-                },
-                body: JSON.stringify({
-                    model: "gpt-3.5-turbo",
-                    messages: [{ role: "user", content: message }]
-                })
-            });
+async function getCompletion(prompt) {
+  try {
+    const response = await fetch(`https://api.openai.com/v1/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "text-davinci-003",
+        prompt: prompt,
+        max_tokens: 20,
+      }),
+    });
 
-            if (!response.ok) {
-                // Si la respuesta no es OK, lanza un error con el estado
-                throw new Error(`Error en la solicitud: ${response.status} - ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            const reply = data.choices[0].message.content;
-            responseContainer.innerHTML = reply;
-        } catch (error) {
-            // Muestra el error en el contenedor y lo imprime en la consola
-            responseContainer.innerHTML = "Error al obtener respuesta. Revisa la consola para más detalles.";
-            console.error("Detalles del error:", error);
-        }
-    } else {
-        responseContainer.innerHTML = "Por favor, escribe un mensaje.";
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status} - ${response.statusText}`);
     }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error al obtener la respuesta de la API:", error);
+    throw error; // Lanza el error para manejarlo donde se llame a esta función
+  }
+}
+
+// getCompletion()
+
+const prompt = document.querySelector("#prompt");
+const button = document.querySelector("#generate");
+const output = document.querySelector("#output");
+
+button.addEventListener("click", async () => {
+  if (!prompt.value.trim()) {
+    window.alert("Please enter a prompt");
+    return; // Detener ejecución si no hay valor
+  }
+
+  try {
+    const response = await getCompletion(prompt.value);
+    console.log("Respuesta de la API:", response);
+    output.innerHTML = response.choices[0].text;
+  } catch (error) {
+    output.innerHTML = "Error al generar respuesta. Revisa la consola para más detalles.";
+  }
 });
