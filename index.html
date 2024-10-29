@@ -11,7 +11,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 </head>
 <body class="bg-gray-900 text-white">
-    <!-- Screens structure remains the same as before -->
     <!-- Login Screen -->
     <div id="loginScreen" class="flex justify-center items-center h-screen">
         <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
@@ -62,22 +61,22 @@
         </div>
     </div>
 
-    <!-- Game Screen - Same as before -->
+    <!-- Game Screen -->
     <div id="gameScreen" class="hidden flex justify-center items-center h-screen">
-        <!-- ... (game screen structure remains the same) ... -->
+        <!-- Game screen structure remains the same -->
     </div>
 
     <script>
         // Firebase configuration
         const firebaseConfig = {
-  apiKey: "AIzaSyBx80hw3lGTSCpvAnYfTPsjfqNg6aWU_l8",
-  authDomain: "dominio-7bd45.firebaseapp.com",
-  projectId: "dominio-7bd45",
-  storageBucket: "dominio-7bd45.appspot.com",
-  messagingSenderId: "782549000808",
-  appId: "1:782549000808:web:8ad95d5d7da7e32ff2d1dd",
-  measurementId: "G-RWJN58NLT8"
-};
+            apiKey: "AIzaSyBx80hw3lGTSCpvAnYfTPsjfqNg6aWU_l8",
+            authDomain: "dominio-7bd45.firebaseapp.com",
+            projectId: "dominio-7bd45",
+            storageBucket: "dominio-7bd45.appspot.com",
+            messagingSenderId: "782549000808",
+            appId: "1:782549000808:web:8ad95d5d7da7e32ff2d1dd",
+            measurementId: "G-RWJN58NLT8"
+        };
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
@@ -91,14 +90,10 @@
             const username = document.getElementById('registerUsername').value;
 
             try {
-                // Create auth account
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                 const user = userCredential.user;
-
-                // Generate 4-digit ID
                 const userId = Math.floor(1000 + Math.random() * 9000).toString();
 
-                // Create user profile in database
                 await database.ref('users/' + user.uid).set({
                     username: username,
                     userId: userId,
@@ -119,10 +114,14 @@
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
 
+            console.log("Attempting to log in with email:", email); // Debug log
+
             try {
                 await auth.signInWithEmailAndPassword(email, password);
-                // Auth state listener will handle the rest
+                console.log("Login successful!"); // Debug log
+                toggleScreen('gameScreen'); // Optional: force transition for testing
             } catch (error) {
+                console.log("Error during login: " + error.message); // Debug log
                 alert('Error: ' + error.message);
             }
         }
@@ -135,7 +134,6 @@
         // Auth state listener
         auth.onAuthStateChanged(async (user) => {
             if (user) {
-                // User is signed in
                 const userRef = database.ref('users/' + user.uid);
                 userRef.on('value', (snapshot) => {
                     const userData = snapshot.val();
@@ -143,7 +141,6 @@
                 });
                 toggleScreen('gameScreen');
             } else {
-                // User is signed out
                 toggleScreen('loginScreen');
             }
         });
@@ -171,84 +168,6 @@
             }
         }
 
-        // Handle attack
-        async function attack() {
-            const targetId = Array.from(document.querySelectorAll('.attack-code'))
-                .map(input => input.value)
-                .join('');
-
-            if (targetId.length !== 4) {
-                alert('Please enter a valid 4-digit code');
-                return;
-            }
-
-            const currentUser = auth.currentUser;
-            if (!currentUser) return;
-
-            try {
-                // Find target user
-                const usersRef = database.ref('users');
-                const snapshot = await usersRef.orderByChild('userId').equalTo(targetId).once('value');
-                const targetData = snapshot.val();
-
-                if (!targetData) {
-                    alert('Target user not found');
-                    return;
-                }
-
-                const targetUserId = Object.keys(targetData)[0];
-                const targetUser = targetData[targetUserId];
-
-                if (targetUserId === currentUser.uid) {
-                    alert('You cannot attack yourself');
-                    return;
-                }
-
-                showBattleAnimation(async () => {
-                    // Calculate battle results
-                    const attackerLoss = Math.floor(Math.random() * 20) + 10;
-                    const defenderLoss = Math.floor(Math.random() * 20) + 10;
-
-                    // Get current user data
-                    const currentUserRef = database.ref('users/' + currentUser.uid);
-                    const currentUserData = (await currentUserRef.once('value')).val();
-
-                    // Update attacker
-                    const updatedAttackerSoldiers = currentUserData.soldiers - attackerLoss;
-                    const attackerLog = [`You attacked ${targetUser.username}. Lost ${attackerLoss} soldiers, eliminated ${defenderLoss} enemy soldiers.`];
-                    if (currentUserData.battleLog) {
-                        attackerLog.push(...currentUserData.battleLog);
-                    }
-
-                    // Update defender
-                    const updatedDefenderSoldiers = targetUser.soldiers - defenderLoss;
-                    const defenderLog = [`${currentUserData.username} attacked you! You lost ${defenderLoss} soldiers, they lost ${attackerLoss} soldiers.`];
-                    if (targetUser.battleLog) {
-                        defenderLog.push(...targetUser.battleLog);
-                    }
-
-                    // Update database
-                    const updates = {};
-                    updates[`users/${currentUser.uid}/soldiers`] = updatedAttackerSoldiers;
-                    updates[`users/${currentUser.uid}/battleLog`] = attackerLog;
-                    updates[`users/${targetUserId}/soldiers`] = updatedDefenderSoldiers;
-                    updates[`users/${targetUserId}/battleLog`] = defenderLog;
-
-                    await database.ref().update(updates);
-
-                    // Clear attack code inputs
-                    document.querySelectorAll('.attack-code').forEach(input => input.value = '');
-                });
-            } catch (error) {
-                alert('Error during attack: ' + error.message);
-            }
-        }
-
-        // Battle animation (remains the same)
-        function showBattleAnimation(callback) {
-            // ... (animation code remains the same) ...
-        }
-
         // Screen toggle helper
         function toggleScreen(screenId) {
             document.getElementById('loginScreen').classList.add('hidden');
@@ -256,15 +175,6 @@
             document.getElementById('gameScreen').classList.add('hidden');
             document.getElementById(screenId).classList.remove('hidden');
         }
-
-        // Auto-advance input helper
-        document.querySelectorAll('.attack-code').forEach((input, index) => {
-            input.addEventListener('input', (e) => {
-                if (e.target.value && index < 3) {
-                    document.querySelectorAll('.attack-code')[index + 1].focus();
-                }
-            });
-        });
     </script>
 </body>
 </html>
