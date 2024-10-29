@@ -1,21 +1,270 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategy Game - Firebase</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.16/tailwind.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 </head>
-<body>
+<body class="bg-gray-900 text-white">
+    <!-- Screens structure remains the same as before -->
+    <!-- Login Screen -->
+    <div id="loginScreen" class="flex justify-center items-center h-screen">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+            <h1 class="text-2xl font-bold mb-4 text-center">Strategy Game - Login</h1>
+            <div class="space-y-4">
+                <div>
+                    <label class="block mb-1">Email</label>
+                    <input type="email" id="loginEmail" class="w-full bg-gray-700 border-gray-600 rounded px-3 py-2">
+                </div>
+                <div>
+                    <label class="block mb-1">Password</label>
+                    <input type="password" id="loginPassword" class="w-full bg-gray-700 border-gray-600 rounded px-3 py-2">
+                </div>
+                <button onclick="login()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+                    Login
+                </button>
+                <button onclick="toggleScreen('registerScreen')" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
+                    Register New Account
+                </button>
+            </div>
+        </div>
+    </div>
 
-  <h1>OpenAI Javascript</h1>
+    <!-- Register Screen -->
+    <div id="registerScreen" class="hidden flex justify-center items-center h-screen">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+            <h1 class="text-2xl font-bold mb-4 text-center">Register New Account</h1>
+            <div class="space-y-4">
+                <div>
+                    <label class="block mb-1">Email</label>
+                    <input type="email" id="registerEmail" class="w-full bg-gray-700 border-gray-600 rounded px-3 py-2">
+                </div>
+                <div>
+                    <label class="block mb-1">Username</label>
+                    <input type="text" id="registerUsername" class="w-full bg-gray-700 border-gray-600 rounded px-3 py-2">
+                </div>
+                <div>
+                    <label class="block mb-1">Password</label>
+                    <input type="password" id="registerPassword" class="w-full bg-gray-700 border-gray-600 rounded px-3 py-2">
+                </div>
+                <button onclick="register()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
+                    Create Account
+                </button>
+                <button onclick="toggleScreen('loginScreen')" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">
+                    Back to Login
+                </button>
+            </div>
+        </div>
+    </div>
 
-  <input type="text" placeholder="Write your prompt" id="prompt">
-  <button id="generate">Generate</button>
+    <!-- Game Screen - Same as before -->
+    <div id="gameScreen" class="hidden flex justify-center items-center h-screen">
+        <!-- ... (game screen structure remains the same) ... -->
+    </div>
 
-  <p id="output"></p>
-  
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+  apiKey: "AIzaSyBx80hw3lGTSCpvAnYfTPsjfqNg6aWU_l8",
+  authDomain: "dominio-7bd45.firebaseapp.com",
+  projectId: "dominio-7bd45",
+  storageBucket: "dominio-7bd45.appspot.com",
+  messagingSenderId: "782549000808",
+  appId: "1:782549000808:web:8ad95d5d7da7e32ff2d1dd",
+  measurementId: "G-RWJN58NLT8"
+};
 
-  <script src="./app.js"></script>
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // Register new user
+        async function register() {
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const username = document.getElementById('registerUsername').value;
+
+            try {
+                // Create auth account
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+
+                // Generate 4-digit ID
+                const userId = Math.floor(1000 + Math.random() * 9000).toString();
+
+                // Create user profile in database
+                await database.ref('users/' + user.uid).set({
+                    username: username,
+                    userId: userId,
+                    soldiers: 50,
+                    health: 100,
+                    battleLog: []
+                });
+
+                alert(`Registration successful! Your ID is: ${userId}`);
+                toggleScreen('loginScreen');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Login
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                // Auth state listener will handle the rest
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Logout
+        function logout() {
+            auth.signOut();
+        }
+
+        // Auth state listener
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                // User is signed in
+                const userRef = database.ref('users/' + user.uid);
+                userRef.on('value', (snapshot) => {
+                    const userData = snapshot.val();
+                    updateGameScreen(userData);
+                });
+                toggleScreen('gameScreen');
+            } else {
+                // User is signed out
+                toggleScreen('loginScreen');
+            }
+        });
+
+        // Update game screen
+        function updateGameScreen(userData) {
+            document.getElementById('currentUser').textContent = userData.username;
+            document.getElementById('userId').textContent = userData.userId;
+            document.getElementById('soldierCount').textContent = userData.soldiers;
+            document.getElementById('healthDisplay').textContent = userData.health + '%';
+            updateBattleLog(userData.battleLog || []);
+        }
+
+        // Update battle log
+        function updateBattleLog(battleLog) {
+            const battleLogElement = document.getElementById('battleLog');
+            battleLogElement.innerHTML = '';
+            if (Array.isArray(battleLog)) {
+                battleLog.forEach(log => {
+                    const logEntry = document.createElement('p');
+                    logEntry.className = 'text-sm';
+                    logEntry.textContent = log;
+                    battleLogElement.appendChild(logEntry);
+                });
+            }
+        }
+
+        // Handle attack
+        async function attack() {
+            const targetId = Array.from(document.querySelectorAll('.attack-code'))
+                .map(input => input.value)
+                .join('');
+
+            if (targetId.length !== 4) {
+                alert('Please enter a valid 4-digit code');
+                return;
+            }
+
+            const currentUser = auth.currentUser;
+            if (!currentUser) return;
+
+            try {
+                // Find target user
+                const usersRef = database.ref('users');
+                const snapshot = await usersRef.orderByChild('userId').equalTo(targetId).once('value');
+                const targetData = snapshot.val();
+
+                if (!targetData) {
+                    alert('Target user not found');
+                    return;
+                }
+
+                const targetUserId = Object.keys(targetData)[0];
+                const targetUser = targetData[targetUserId];
+
+                if (targetUserId === currentUser.uid) {
+                    alert('You cannot attack yourself');
+                    return;
+                }
+
+                showBattleAnimation(async () => {
+                    // Calculate battle results
+                    const attackerLoss = Math.floor(Math.random() * 20) + 10;
+                    const defenderLoss = Math.floor(Math.random() * 20) + 10;
+
+                    // Get current user data
+                    const currentUserRef = database.ref('users/' + currentUser.uid);
+                    const currentUserData = (await currentUserRef.once('value')).val();
+
+                    // Update attacker
+                    const updatedAttackerSoldiers = currentUserData.soldiers - attackerLoss;
+                    const attackerLog = [`You attacked ${targetUser.username}. Lost ${attackerLoss} soldiers, eliminated ${defenderLoss} enemy soldiers.`];
+                    if (currentUserData.battleLog) {
+                        attackerLog.push(...currentUserData.battleLog);
+                    }
+
+                    // Update defender
+                    const updatedDefenderSoldiers = targetUser.soldiers - defenderLoss;
+                    const defenderLog = [`${currentUserData.username} attacked you! You lost ${defenderLoss} soldiers, they lost ${attackerLoss} soldiers.`];
+                    if (targetUser.battleLog) {
+                        defenderLog.push(...targetUser.battleLog);
+                    }
+
+                    // Update database
+                    const updates = {};
+                    updates[`users/${currentUser.uid}/soldiers`] = updatedAttackerSoldiers;
+                    updates[`users/${currentUser.uid}/battleLog`] = attackerLog;
+                    updates[`users/${targetUserId}/soldiers`] = updatedDefenderSoldiers;
+                    updates[`users/${targetUserId}/battleLog`] = defenderLog;
+
+                    await database.ref().update(updates);
+
+                    // Clear attack code inputs
+                    document.querySelectorAll('.attack-code').forEach(input => input.value = '');
+                });
+            } catch (error) {
+                alert('Error during attack: ' + error.message);
+            }
+        }
+
+        // Battle animation (remains the same)
+        function showBattleAnimation(callback) {
+            // ... (animation code remains the same) ...
+        }
+
+        // Screen toggle helper
+        function toggleScreen(screenId) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('registerScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.add('hidden');
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        // Auto-advance input helper
+        document.querySelectorAll('.attack-code').forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                if (e.target.value && index < 3) {
+                    document.querySelectorAll('.attack-code')[index + 1].focus();
+                }
+            });
+        });
+    </script>
 </body>
 </html>
