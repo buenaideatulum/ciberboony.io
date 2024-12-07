@@ -1,257 +1,185 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DOMINIO - Firebase</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.16/tailwind.min.css">
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <title>Tarjeta Interactiva</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        .card-container {
+            perspective: 1000px;
+            width: 300px;
+            height: 430px;
+        }
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            background-color: white;
+            border: 2px solid #e0e0e0;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+        #fileInputFront, #fileInputBack {
+            display: none;
+        }
+        .image-placeholder {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .upload-btn {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
 </head>
-<body class="bg-gray-900 text-white">
-    <!-- Previous login and register screens remain the same -->
-    
-    <!-- Updated Game Screen -->
-    <div id="gameScreen" class="hidden">
-        <div class="flex justify-center items-center h-screen">
-            <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
-                <div class="flex justify-between items-center mb-4">
-                    <h1 class="text-2xl font-bold">DOMINIO</h1>
-                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">
-                        Logout
-                    </button>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <p>User: <span id="currentUser" class="font-bold"></span></p>
-                        <p>ID: <span id="userId" class="font-bold"></span></p>
-                    </div>
-                    <div class="text-right">
-                        <p>Next Update:</p>
-                        <p id="nextUpdate" class="font-bold"></p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div class="bg-gray-700 p-4 rounded">
-                        <p>Soldiers:</p>
-                        <p id="soldierCount" class="text-2xl font-bold">50</p>
-                    </div>
-                    <div class="bg-gray-700 p-4 rounded">
-                        <p>Villagers:</p>
-                        <p id="villagerCount" class="text-2xl font-bold">10</p>
-                    </div>
-                </div>
-                
-                <div class="bg-gray-700 p-4 rounded mb-4">
-                    <div class="flex justify-between items-center">
-                        <p>Health:</p>
-                        <p id="healthDisplay" class="text-2xl font-bold">100%</p>
-                    </div>
-                    <div class="mt-2 text-sm text-gray-400">
-                        <p>Regeneration Rate:</p>
-                        <p id="regenRate" class="font-bold"></p>
-                    </div>
-                </div>
-                
-                <!-- Rest of the UI remains the same -->
+<body>
+    <div class="card-container">
+        <div class="card" id="card">
+            <div class="card-front">
+                <img id="imageFront" src="/api/placeholder/300/430" alt="Cara A" class="image-placeholder">
+                <label for="fileInputFront" class="upload-btn">Subir Cara A</label>
+                <input type="file" id="fileInputFront" accept="image/*">
+            </div>
+            <div class="card-back">
+                <img id="imageBack" src="/api/placeholder/300/430" alt="Cara B" class="image-placeholder">
+                <label for="fileInputBack" class="upload-btn">Subir Cara B</label>
+                <input type="file" id="fileInputBack" accept="image/*">
             </div>
         </div>
     </div>
 
     <script>
-        // Firebase configuration remains the same
+        const card = document.getElementById('card');
+        const fileInputFront = document.getElementById('fileInputFront');
+        const fileInputBack = document.getElementById('fileInputBack');
+        const imageFront = document.getElementById('imageFront');
+        const imageBack = document.getElementById('imageBack');
 
-        // Modified register function to include villagers
-        async function register() {
-            const email = document.getElementById('registerEmail').value;
-            const password = document.getElementById('registerPassword').value;
-            const username = document.getElementById('registerUsername').value;
+        // Rotación de la tarjeta
+        let isDragging = false;
+        let startX, startY;
+        let currentRotationX = 0;
+        let currentRotationY = 0;
 
-            try {
-                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                const user = userCredential.user;
-                const userId = Math.floor(1000 + Math.random() * 9000).toString();
-
-                // Updated initial user data
-                await database.ref('users/' + user.uid).set({
-                    username: username,
-                    userId: userId,
-                    soldiers: 50,
-                    villagers: 10,
-                    health: 100,
-                    lastUpdate: Date.now(),
-                    battleLog: []
-                });
-
-                alert(`Registration successful! Your ID is: ${userId}`);
-                toggleScreen('loginScreen');
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        }
-
-        // Add resource regeneration system
-        function startResourceTimer(userId) {
-            setInterval(async () => {
-                const userRef = database.ref('users/' + userId);
-                const snapshot = await userRef.once('value');
-                const userData = snapshot.val();
-                
-                const currentTime = Date.now();
-                const hoursSinceUpdate = (currentTime - userData.lastUpdate) / (1000 * 60 * 60);
-                
-                if (hoursSinceUpdate >= 1) {
-                    // Calculate regeneration based on villagers
-                    const healthRegen = Math.floor(hoursSinceUpdate * (userData.villagers / 10));
-                    const soldierRegen = Math.floor((hoursSinceUpdate / 6) * (userData.villagers / 10));
-                    const newVillagers = Math.floor(hoursSinceUpdate / 24);
-                    
-                    const updates = {
-                        health: Math.min(100, userData.health + healthRegen),
-                        soldiers: userData.soldiers + soldierRegen,
-                        villagers: userData.villagers + newVillagers,
-                        lastUpdate: currentTime
-                    };
-                    
-                    await userRef.update(updates);
-                }
-            }, 60000); // Check every minute
-        }
-
-        // Modified attack function with new combat mechanics
-        async function attack() {
-            const targetId = Array.from(document.querySelectorAll('.attack-code'))
-                .map(input => input.value)
-                .join('');
-
-            if (targetId.length !== 4) {
-                alert('Please enter a valid 4-digit code');
-                return;
-            }
-
-            const currentUser = auth.currentUser;
-            if (!currentUser) return;
-
-            try {
-                const usersRef = database.ref('users');
-                const snapshot = await usersRef.orderByChild('userId').equalTo(targetId).once('value');
-                const targetData = snapshot.val();
-
-                if (!targetData) {
-                    alert('Target user not found');
-                    return;
-                }
-
-                const targetUserId = Object.keys(targetData)[0];
-                const targetUser = targetData[targetUserId];
-
-                if (targetUserId === currentUser.uid) {
-                    alert('You cannot attack yourself');
-                    return;
-                }
-
-                const currentUserRef = database.ref('users/' + currentUser.uid);
-                const currentUserData = (await currentUserRef.once('value')).val();
-
-                const updates = {};
-                let attackerLog = [];
-                let defenderLog = [];
-
-                // Updated combat logic with villager mechanics
-                if (targetUser.soldiers <= 0) {
-                    const healthDamage = Math.floor(Math.random() * 20) + 10;
-                    const updatedHealth = Math.max(0, targetUser.health - healthDamage);
-                    
-                    if (updatedHealth <= 0) {
-                        // Defender is defeated - transfer villagers and reset
-                        const villagersToTransfer = Math.floor(targetUser.villagers / 2);
-                        const updatedAttackerVillagers = currentUserData.villagers + villagersToTransfer;
-                        
-                        updates[`users/${currentUser.uid}/villagers`] = updatedAttackerVillagers;
-                        updates[`users/${currentUser.uid}/soldiers`] = currentUserData.soldiers + 25;
-                        updates[`users/${currentUser.uid}/health`] = Math.min(100, currentUserData.health + 50);
-                        
-                        // Reset defeated player
-                        updates[`users/${targetUserId}/soldiers`] = 10;
-                        updates[`users/${targetUserId}/villagers`] = 1;
-                        updates[`users/${targetUserId}/health`] = 100;
-
-                        attackerLog = [`Victory! Captured ${villagersToTransfer} villagers from ${targetUser.username}!`];
-                        defenderLog = [`Defeated by ${currentUserData.username}. Lost ${villagersToTransfer} villagers and reset to starting state.`];
-                    } else {
-                        updates[`users/${targetUserId}/health`] = updatedHealth;
-                        
-                        attackerLog = [`Attacked ${targetUser.username}'s base! Dealt ${healthDamage} damage.`];
-                        defenderLog = [`${currentUserData.username} attacked! Took ${healthDamage} damage.`];
-                    }
-                } else {
-                    // Normal combat
-                    const attackerLoss = Math.floor(Math.random() * 20) + 10;
-                    const defenderLoss = Math.floor(Math.random() * 20) + 10;
-
-                    updates[`users/${currentUser.uid}/soldiers`] = currentUserData.soldiers - attackerLoss;
-                    updates[`users/${targetUserId}/soldiers`] = targetUser.soldiers - defenderLoss;
-
-                    attackerLog = [`Battle with ${targetUser.username}: Lost ${attackerLoss} soldiers, eliminated ${defenderLoss} enemy soldiers.`];
-                    defenderLog = [`${currentUserData.username} attacked: Lost ${defenderLoss} soldiers, they lost ${attackerLoss} soldiers.`];
-                }
-
-                // Update battle logs
-                if (currentUserData.battleLog) attackerLog.push(...currentUserData.battleLog);
-                if (targetUser.battleLog) defenderLog.push(...targetUser.battleLog);
-
-                updates[`users/${currentUser.uid}/battleLog`] = attackerLog;
-                updates[`users/${targetUserId}/battleLog`] = defenderLog;
-
-                await database.ref().update(updates);
-                document.querySelectorAll('.attack-code').forEach(input => input.value = '');
-            } catch (error) {
-                alert('Error during attack: ' + error.message);
-            }
-        }
-
-        // Modified update game screen function
-        function updateGameScreen(userData) {
-            document.getElementById('currentUser').textContent = userData.username;
-            document.getElementById('userId').textContent = userData.userId;
-            document.getElementById('soldierCount').textContent = userData.soldiers;
-            document.getElementById('villagerCount').textContent = userData.villagers;
-            document.getElementById('healthDisplay').textContent = userData.health + '%';
+        function rotateCard(deltaX, deltaY) {
+            currentRotationY += deltaX * 0.5;
+            currentRotationX -= deltaY * 0.5;
             
-            // Calculate and display regeneration rates
-            const healthRegenPerHour = Math.floor(userData.villagers / 10);
-            const soldiersRegenPerHour = Math.floor(userData.villagers / 60); // 1 per 6 hours
-            document.getElementById('regenRate').textContent = 
-                `+${healthRegenPerHour} Health/hr, +${soldiersRegenPerHour} Soldiers/hr`;
+            // Limitar rotación
+            currentRotationX = Math.max(-45, Math.min(45, currentRotationX));
             
-            // Calculate time until next villager
-            const hoursSinceUpdate = (Date.now() - userData.lastUpdate) / (1000 * 60 * 60);
-            const hoursUntilVillager = 24 - (hoursSinceUpdate % 24);
-            document.getElementById('nextUpdate').textContent = 
-                `New villager in ${Math.floor(hoursUntilVillager)}h`;
-            
-            updateBattleLog(userData.battleLog || []);
+            card.style.transform = `rotateX(${currentRotationX}deg) rotateY(${currentRotationY}deg)`;
         }
 
-        // Auth state listener modification
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                const userRef = database.ref('users/' + user.uid);
-                userRef.on('value', (snapshot) => {
-                    const userData = snapshot.val();
-                    updateGameScreen(userData);
-                });
-                startResourceTimer(user.uid);
-                toggleScreen('gameScreen');
-            } else {
-                toggleScreen('loginScreen');
+        // Eventos para ratón
+        card.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            
+            rotateCard(deltaX, deltaY);
+            
+            startX = e.clientX;
+            startY = e.clientY;
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        // Eventos táctiles para móviles
+        card.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            
+            const deltaX = e.touches[0].clientX - startX;
+            const deltaY = e.touches[0].clientY - startY;
+            
+            rotateCard(deltaX, deltaY);
+            
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        });
+
+        document.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+
+        // Voltear tarjeta al hacer clic
+        card.addEventListener('click', () => {
+            card.classList.toggle('flipped');
+        });
+
+        // Subir imágenes
+        fileInputFront.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    imageFront.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
             }
         });
 
-        // Rest of the code remains the same
+        fileInputBack.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    imageBack.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
     </script>
 </body>
 </html>
