@@ -3,310 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interfaz con Tracking de Manos y Ojos</title>
+    <title>Control de Navegador con Gestos</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/facemesh"></script>
     <style>
-        * {
+        body {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            overflow: hidden;
-            background: black;
-            font-family: Arial, sans-serif;
-            position: relative;
+            display: flex;
+            flex-direction: row;
             height: 100vh;
-            width: 100vw;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
         }
-
-        /* Video en pantalla completa */
+        
+        #camera-container {
+            position: relative;
+            width: 30%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+        }
+        
         #video {
             position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
-            z-index: -1;
-            transform: scaleX(-1); /* Espejo para interfaz intuitiva */
+            transform: scaleX(-1);
         }
-
-        /* Canvas para visualización */
-        #outputCanvas {
+        
+        #canvas {
             position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
-            z-index: 0;
-            pointer-events: none;
-            transform: scaleX(-1); /* Espejo para corresponder con el video */
+            transform: scaleX(-1);
         }
-
-        /* Cuadros de tracking */
-        .tracking-box {
-            position: absolute;
-            border: 2px solid cyan;
-            width: 30px;
-            height: 30px;
-            pointer-events: none;
-            transform: translate(-50%, -50%); /* Centrar en el punto detectado */
-            border-radius: 50%; /* Circular para mejor visualización */
-            z-index: 2;
+        
+        #browser-container {
+            width: 70%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
         }
-
-        #eyeBox {
-            border-color: yellow;
-            width: 20px;
-            height: 20px;
+        
+        #browser-controls {
+            display: flex;
+            padding: 10px;
+            background: #f0f0f0;
+            border-bottom: 1px solid #ccc;
         }
-
-        #handBox {
-            border-color: cyan;
-            transition: all 0.1s ease;
+        
+        #browser-controls button {
+            margin-right: 10px;
+            padding: 5px 10px;
+            cursor: pointer;
         }
-
-        /* Navegador flotante */
-        #browserFrame {
-            position: absolute;
-            top: 20%;
-            left: 20%;
-            width: 60%;
-            height: 60%;
+        
+        #url-bar {
+            flex-grow: 1;
+            padding: 5px;
+            margin: 0 10px;
+        }
+        
+        #browser-iframe {
+            flex-grow: 1;
             border: none;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-            transition: all 0.2s ease;
-            transform-origin: center;
-            z-index: 1;
+            background: white;
         }
-
-        /* Interfaz de usuario */
-        #ui {
+        
+        #status {
             position: absolute;
             top: 10px;
             left: 10px;
-            z-index: 10;
+            background: rgba(0, 0, 0, 0.7);
             color: white;
-            background: rgba(0, 0, 0, 0.5);
             padding: 10px;
             border-radius: 5px;
-            font-size: 14px;
-            max-width: 300px;
-        }
-
-        #status {
-            margin-top: 10px;
-            color: #00ff00;
-        }
-
-        /* Estilo para gesto de pellizco activo */
-        .pinching #handBox {
-            border: 3px solid lime;
-            box-shadow: 0 0 10px lime;
-        }
-
-        /* Controles */
-        #controls {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
             z-index: 10;
         }
-
-        button {
-            padding: 8px 15px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.4);
+        
+        #gesture-indicator {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
             color: white;
+            padding: 10px;
             border-radius: 5px;
-            cursor: pointer;
-            backdrop-filter: blur(5px);
-            transition: all 0.2s;
+            z-index: 10;
         }
-
-        button:hover {
-            background: rgba(255, 255, 255, 0.3);
+        
+        #cursor {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(255, 0, 0, 0.7);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 100;
+            display: none;
         }
-
-        /* Indicador de carga */
-        #loader {
-            position: fixed;
+        
+        #loading {
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
             display: flex;
-            justify-content: center;
-            align-items: center;
             flex-direction: column;
-            z-index: 100;
-        }
-
-        #loader p {
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.9);
             color: white;
-            margin-top: 20px;
+            z-index: 20;
         }
-
+        
         .spinner {
-            border: 5px solid rgba(255, 255, 255, 0.3);
-            border-top: 5px solid cyan;
-            border-radius: 50%;
             width: 50px;
             height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top-color: cyan;
+            border-radius: 50%;
+            margin-bottom: 15px;
             animation: spin 1s linear infinite;
         }
-
+        
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Mensaje de error */
-        #error {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255, 0, 0, 0.8);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            max-width: 80%;
-            z-index: 100;
-            display: none;
-        }
-
-        .hidden {
-            display: none !important;
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <!-- Pantalla de carga -->
-    <div id="loader">
+    <div id="loading">
         <div class="spinner"></div>
-        <p id="loadingText">Cargando modelos de detección...</p>
+        <div id="loadingText">Cargando modelos y cámara...</div>
     </div>
-
-    <!-- Mensaje de error -->
-    <div id="error"></div>
-
-    <!-- Video en el fondo -->
-    <video id="video" autoplay playsinline></video>
-    <canvas id="outputCanvas"></canvas>
-
-    <!-- Cuadros de tracking -->
-    <div id="eyeBox" class="tracking-box"></div>
-    <div id="handBox" class="tracking-box"></div>
-
-    <!-- Navegador flotante -->
-    <iframe id="browserFrame" src="https://www.google.com"></iframe>
-
-    <!-- Interfaz de usuario -->
-    <div id="ui">
-        <h3>Control gestual</h3>
-        <div id="status">Esperando...</div>
+    
+    <!-- Contenedor de cámara -->
+    <div id="camera-container">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+        <div id="status">Iniciando...</div>
+        <div id="gesture-indicator">Gesto: Ninguno</div>
     </div>
-
-    <!-- Controles -->
-    <div id="controls">
-        <button id="resetBtn">Restablecer posición</button>
-        <button id="toggleDetectionBtn">Pausar detección</button>
-        <button id="changeUrlBtn">Cambiar URL</button>
+    
+    <!-- Contenedor del navegador -->
+    <div id="browser-container">
+        <div id="browser-controls">
+            <button id="btn-back">←</button>
+            <button id="btn-forward">→</button>
+            <button id="btn-refresh">↻</button>
+            <input type="text" id="url-bar" value="https://example.com">
+            <button id="btn-go">Ir</button>
+        </div>
+        <iframe id="browser-iframe" src="about:blank"></iframe>
     </div>
-
+    
+    <!-- Cursor virtual -->
+    <div id="cursor"></div>
+    
     <script>
         // Referencias a elementos DOM
-        const video = document.getElementById("video");
-        const eyeBox = document.getElementById("eyeBox");
-        const handBox = document.getElementById("handBox");
-        const browserFrame = document.getElementById("browserFrame");
-        const outputCanvas = document.getElementById("outputCanvas");
-        const ctx = outputCanvas.getContext("2d");
-        const statusElement = document.getElementById("status");
-        const loader = document.getElementById("loader");
-        const loadingText = document.getElementById("loadingText");
-        const errorElement = document.getElementById("error");
-        const resetBtn = document.getElementById("resetBtn");
-        const toggleDetectionBtn = document.getElementById("toggleDetectionBtn");
-        const changeUrlBtn = document.getElementById("changeUrlBtn");
-
-        // Variables de estado
-        let detectionActive = true;
-        let isPinching = false;
-        let canvasInitialized = false;
-        let handDetector = null;
-        let faceMeshModel = null;
-        let animationFrame = null;
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const cursor = document.getElementById('cursor');
+        const status = document.getElementById('status');
+        const gestureIndicator = document.getElementById('gesture-indicator');
+        const loading = document.getElementById('loading');
+        const loadingText = document.getElementById('loadingText');
+        const browserIframe = document.getElementById('browser-iframe');
+        const urlBar = document.getElementById('url-bar');
+        const btnGo = document.getElementById('btn-go');
+        const btnBack = document.getElementById('btn-back');
+        const btnForward = document.getElementById('btn-forward');
+        const btnRefresh = document.getElementById('btn-refresh');
         
-        // Configuración inicial
-        const defaultBrowserPosition = {
-            top: "20%",
-            left: "20%",
-            width: "60%",
-            height: "60%",
-            scale: 1
-        };
-
+        // Estado
+        let lastPose = null;
+        let clickCooldown = false;
+        let scrollCooldown = false;
+        let currentGesture = 'none';
+        
         // Iniciar la aplicación
-        async function initApp() {
+        async function init() {
             try {
-                // Iniciar cámara
-                await startCamera();
+                // 1. Iniciar la cámara
+                loadingText.textContent = "Solicitando acceso a la cámara...";
+                await setupCamera();
                 
-                // Inicializar canvas después de que el video esté listo
-                video.addEventListener('loadedmetadata', setupCanvas);
+                // 2. Cargar el modelo de detección de manos
+                loadingText.textContent = "Cargando modelo de detección de manos...";
+                const model = await loadHandDetectionModel();
                 
-                // Cargar modelos
-                loadingText.textContent = "Cargando modelos de detección...";
-                await loadModels();
+                // 3. Configurar navegador inicial
+                loadWebsite('https://example.com');
                 
-                // Configurar controles
-                setupEventListeners();
+                // 4. Configurar eventos de navegador
+                setupBrowserEvents();
                 
-                // Ocultar loader cuando todo esté listo
-                loader.classList.add("hidden");
+                // 5. Ocultar pantalla de carga
+                loading.style.display = 'none';
                 
-                updateStatus("Listo. Mueve tu mano y haz el gesto de pellizco para controlar.");
+                // 6. Iniciar detección continua
+                status.textContent = "Detección activa";
+                detectHands(model);
+                
             } catch (error) {
-                showError(`Error al inicializar: ${error.message}`);
-                console.error(error);
+                loadingText.textContent = `Error: ${error.message}`;
+                console.error('Error al inicializar:', error);
             }
         }
-
-        // Iniciar la cámara
-        async function startCamera() {
+        
+        // Configurar la cámara
+        async function setupCamera() {
             try {
-                loadingText.textContent = "Solicitando acceso a la cámara...";
-                const constraints = { 
+                const stream = await navigator.mediaDevices.getUserMedia({
                     video: { 
-                        facingMode: "user",
+                        facingMode: 'user',
                         width: { ideal: 1280 },
                         height: { ideal: 720 }
-                    } 
-                };
+                    }
+                });
                 
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
                 
-                return new Promise(resolve => {
+                return new Promise((resolve) => {
                     video.onloadedmetadata = () => {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
                         resolve();
                     };
                 });
@@ -314,321 +247,315 @@
                 throw new Error(`No se pudo acceder a la cámara: ${error.message}`);
             }
         }
-
-        // Configurar canvas
-        function setupCanvas() {
-            if (canvasInitialized) return;
-            
-            // Configurar canvas para que coincida con las dimensiones del video
-            outputCanvas.width = video.videoWidth;
-            outputCanvas.height = video.videoHeight;
-            
-            canvasInitialized = true;
-        }
-
-        // Cargar modelos
-        async function loadModels() {
+        
+        // Cargar modelo de detección de manos
+        async function loadHandDetectionModel() {
             try {
-                loadingText.textContent = "Cargando modelo de detección de manos...";
-                handDetector = await handPoseDetection.createDetector(
-                    handPoseDetection.SupportedModels.MediaPipeHands, 
+                return await handPoseDetection.createDetector(
+                    handPoseDetection.SupportedModels.MediaPipeHands,
                     {
                         runtime: 'mediapipe',
                         solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/hands',
-                        modelType: 'lite',
+                        modelType: 'full',
                         maxHands: 1
                     }
                 );
-                
-                loadingText.textContent = "Cargando modelo de detección facial...";
-                faceMeshModel = await facemesh.load({
-                    maxFaces: 1
-                });
-                
-                updateStatus("Modelos cargados correctamente");
             } catch (error) {
-                throw new Error(`Error al cargar modelos: ${error.message}`);
+                throw new Error(`Error al cargar el modelo: ${error.message}`);
             }
         }
-
-        // Configurar eventos
-        function setupEventListeners() {
-            // Restablecer posición
-            resetBtn.addEventListener("click", () => {
-                resetBrowserPosition();
+        
+        // Configurar eventos del navegador
+        function setupBrowserEvents() {
+            btnGo.addEventListener('click', () => {
+                loadWebsite(urlBar.value);
             });
             
-            // Alternar detección
-            toggleDetectionBtn.addEventListener("click", () => {
-                detectionActive = !detectionActive;
-                toggleDetectionBtn.textContent = detectionActive ? "Pausar detección" : "Reanudar detección";
-                updateStatus(detectionActive ? "Detección activa" : "Detección pausada");
-                
-                if (detectionActive && !animationFrame) {
-                    startDetection();
+            urlBar.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    loadWebsite(urlBar.value);
                 }
             });
             
-            // Cambiar URL
-            changeUrlBtn.addEventListener("click", () => {
-                const newUrl = prompt("Introduce una nueva URL:", "https://www.google.com");
-                if (newUrl) {
-                    try {
-                        new URL(newUrl); // Validar URL
-                        browserFrame.src = newUrl;
-                        updateStatus(`Navegando a: ${newUrl}`);
-                    } catch (e) {
-                        alert("URL no válida");
-                    }
-                }
+            btnBack.addEventListener('click', () => {
+                browserIframe.contentWindow.history.back();
             });
             
-            // Ajustar canvas al cambiar tamaño de ventana
-            window.addEventListener("resize", () => {
-                if (video.videoWidth) {
-                    setupCanvas();
-                }
-            });
-        }
-
-        // Iniciar detección
-        function startDetection() {
-            if (!handDetector || !faceMeshModel) {
-                showError("Los modelos no se han cargado correctamente");
-                return;
-            }
-            
-            detectLandmarks();
-        }
-
-        // Detectar puntos de referencia
-        async function detectLandmarks() {
-            if (!canvasInitialized) {
-                setupCanvas();
-            }
-            
-            // Limpiar canvas
-            ctx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
-            
-            if (detectionActive) {
-                try {
-                    // Detectar manos
-                    await detectHands();
-                    
-                    // Detectar rostro/ojos
-                    await detectFace();
-                } catch (error) {
-                    console.error("Error en detección:", error);
-                    updateStatus("Error en detección");
-                }
-            }
-            
-            // Continuar el bucle de animación
-            animationFrame = requestAnimationFrame(detectLandmarks);
-        }
-
-        // Detectar manos
-        async function detectHands() {
-            const hands = await handDetector.estimateHands(video);
-            
-            if (hands.length > 0) {
-                const hand = hands[0];
-                const indexFinger = hand.keypoints[8]; // Dedo índice
-                const thumb = hand.keypoints[4]; // Pulgar
-                
-                // Convertir coordenadas del modelo a coordenadas de la ventana
-                const screenIndexFinger = convertToScreenCoordinates(indexFinger);
-                const screenThumb = convertToScreenCoordinates(thumb);
-                
-                // Actualizar posición del cuadro de la mano
-                handBox.style.left = `${screenIndexFinger.x}px`;
-                handBox.style.top = `${screenIndexFinger.y}px`;
-                handBox.classList.remove("hidden");
-                
-                // Dibujar conexión entre índice y pulgar
-                drawConnection(indexFinger, thumb);
-                
-                // Detectar pellizco (índice y pulgar cerca)
-                const pinchDistance = calculateDistance(indexFinger, thumb);
-                const wasPinching = isPinching;
-                isPinching = pinchDistance < 30;
-                
-                // Si comienza a pellizcar
-                if (isPinching && !wasPinching) {
-                    document.body.classList.add("pinching");
-                    updateStatus("¡Pellizco detectado! Mueve la mano para reubicar el navegador");
-                }
-                
-                // Si termina de pellizcar
-                if (!isPinching && wasPinching) {
-                    document.body.classList.remove("pinching");
-                    updateStatus("Pellizco liberado");
-                }
-                
-                // Si está pellizcando, mover el iframe
-                if (isPinching) {
-                    browserFrame.style.left = `${screenIndexFinger.x - (browserFrame.clientWidth / 2)}px`;
-                    browserFrame.style.top = `${screenIndexFinger.y - (browserFrame.clientHeight / 2)}px`;
-                }
-                
-                // Dibujar puntos clave de la mano
-                drawHandLandmarks(hand.keypoints);
-            } else {
-                handBox.classList.add("hidden");
-                
-                if (isPinching) {
-                    isPinching = false;
-                    document.body.classList.remove("pinching");
-                }
-            }
-        }
-
-        // Detectar rostro
-        async function detectFace() {
-            const faces = await faceMeshModel.estimateFaces({ input: video });
-            
-            if (faces.length > 0) {
-                // Pupila derecha (punto 468 en MediaPipe FaceMesh)
-                const rightEye = faces[0].scaledMesh[468];
-                // Pupila izquierda (punto 473 en MediaPipe FaceMesh)
-                const leftEye = faces[0].scaledMesh[473];
-                
-                // Usar el promedio de ambos ojos para un tracking más estable
-                const avgEye = {
-                    x: (rightEye[0] + leftEye[0]) / 2,
-                    y: (rightEye[1] + leftEye[1]) / 2
-                };
-                
-                // Convertir a coordenadas de pantalla
-                const screenEye = convertToScreenCoordinates(avgEye);
-                
-                // Actualizar posición del cuadro del ojo
-                eyeBox.style.left = `${screenEye.x}px`;
-                eyeBox.style.top = `${screenEye.y}px`;
-                eyeBox.classList.remove("hidden");
-                
-                // Dibujar puntos clave de los ojos
-                drawEyeLandmarks(faces[0].scaledMesh);
-            } else {
-                eyeBox.classList.add("hidden");
-            }
-        }
-
-        // Dibujar conexión entre puntos
-        function drawConnection(point1, point2) {
-            ctx.beginPath();
-            ctx.moveTo(point1.x, point1.y);
-            ctx.lineTo(point2.x, point2.y);
-            ctx.strokeStyle = isPinching ? 'lime' : 'cyan';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-        }
-
-        // Dibujar puntos clave de la mano
-        function drawHandLandmarks(keypoints) {
-            ctx.fillStyle = 'cyan';
-            
-            // Dibujar todos los puntos clave
-            keypoints.forEach(point => {
-                ctx.beginPath();
-                ctx.arc(point.x, point.y, 3, 0, 2 * Math.PI);
-                ctx.fill();
+            btnForward.addEventListener('click', () => {
+                browserIframe.contentWindow.history.forward();
             });
             
-            // Resaltar índice y pulgar
-            ctx.fillStyle = 'lime';
-            ctx.beginPath();
-            ctx.arc(keypoints[8].x, keypoints[8].y, 5, 0, 2 * Math.PI);
-            ctx.fill();
-            
-            ctx.beginPath();
-            ctx.arc(keypoints[4].x, keypoints[4].y, 5, 0, 2 * Math.PI);
-            ctx.fill();
+            btnRefresh.addEventListener('click', () => {
+                browserIframe.contentWindow.location.reload();
+            });
         }
-
-        // Dibujar puntos clave de los ojos
-        function drawEyeLandmarks(faceMesh) {
-            // Dibujar pupilas
-            ctx.fillStyle = 'yellow';
+        
+        // Cargar un sitio web en el iframe
+        function loadWebsite(url) {
+            // Asegurar que la URL tenga el formato correcto
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
             
-            // Pupila derecha (468)
-            ctx.beginPath();
-            ctx.arc(faceMesh[468][0], faceMesh[468][1], 3, 0, 2 * Math.PI);
-            ctx.fill();
-            
-            // Pupila izquierda (473)
-            ctx.beginPath();
-            ctx.arc(faceMesh[473][0], faceMesh[473][1], 3, 0, 2 * Math.PI);
-            ctx.fill();
+            try {
+                browserIframe.src = url;
+                urlBar.value = url;
+            } catch (error) {
+                console.error('Error al cargar sitio:', error);
+            }
         }
-
+        
+        // Detectar gestos de mano
+        function detectGesture(hand) {
+            // Referencia a puntos clave
+            const landmarks = hand.keypoints;
+            const thumb = landmarks[4];  // Pulgar
+            const index = landmarks[8];  // Índice
+            const middle = landmarks[12]; // Medio
+            const wrist = landmarks[0];  // Muñeca
+            
+            // Calcular distancias
+            const thumbIndexDist = getDistance(thumb, index);
+            
+            // Gestos básicos
+            if (thumbIndexDist < 30) {
+                return 'click';
+            }
+            
+            // Detectar scroll - mano abierta con dedos extendidos
+            const fingersUp = areAllFingersUp(landmarks);
+            if (fingersUp && lastPose) {
+                const wristDiff = wrist.y - lastPose.wrist.y;
+                if (Math.abs(wristDiff) > 15) {
+                    return wristDiff > 0 ? 'scroll-down' : 'scroll-up';
+                }
+            }
+            
+            return 'pointing';
+        }
+        
+        // Verificar si todos los dedos están extendidos
+        function areAllFingersUp(landmarks) {
+            const wrist = landmarks[0];
+            const fingertips = [landmarks[8], landmarks[12], landmarks[16], landmarks[20]];
+            
+            // Contar cuántos dedos están arriba (Y menor que la muñeca)
+            let fingersUp = 0;
+            for (const tip of fingertips) {
+                if (tip.y < wrist.y) {
+                    fingersUp++;
+                }
+            }
+            
+            return fingersUp >= 3;
+        }
+        
         // Calcular distancia entre dos puntos
-        function calculateDistance(point1, point2) {
+        function getDistance(p1, p2) {
             return Math.sqrt(
-                Math.pow(point1.x - point2.x, 2) + 
-                Math.pow(point1.y - point2.y, 2)
+                Math.pow(p1.x - p2.x, 2) + 
+                Math.pow(p1.y - p2.y, 2)
             );
         }
-
-        // Convertir coordenadas del modelo a coordenadas de la pantalla
-        function convertToScreenCoordinates(point) {
-            // Obtener las dimensiones actuales del video y la ventana
-            const videoRatio = video.videoWidth / video.videoHeight;
-            const screenRatio = window.innerWidth / window.innerHeight;
+        
+        // Actualizar cursor virtual
+        function updateCursor(x, y) {
+            const cameraRect = document.getElementById('camera-container').getBoundingClientRect();
+            const browserRect = document.getElementById('browser-container').getBoundingClientRect();
             
-            let x, y;
+            // Convertir coordenadas relativas a la cámara a coordenadas absolutas
+            const absoluteX = cameraRect.width - x + cameraRect.width; // Ajustar por espejo
+            const absoluteY = y;
             
-            // Ajustar por proporción
-            if (screenRatio > videoRatio) {
-                // La pantalla es más ancha que el video
-                const videoWidth = window.innerHeight * videoRatio;
-                const offsetX = (window.innerWidth - videoWidth) / 2;
+            // Limitar cursor al área del navegador
+            if (absoluteX > cameraRect.width) {
+                // Calcular posición relativa en el navegador
+                const browserX = absoluteX - cameraRect.width;
+                const browserY = absoluteY;
                 
-                x = (point.x / video.videoWidth) * videoWidth + offsetX;
-                y = (point.y / video.videoHeight) * window.innerHeight;
-            } else {
-                // La pantalla es más alta que el video
-                const videoHeight = window.innerWidth / videoRatio;
-                const offsetY = (window.innerHeight - videoHeight) / 2;
-                
-                x = (point.x / video.videoWidth) * window.innerWidth;
-                y = (point.y / video.videoHeight) * videoHeight + offsetY;
+                if (browserX >= 0 && browserX <= browserRect.width &&
+                    browserY >= 0 && browserY <= browserRect.height) {
+                    // Mostrar cursor en navegador
+                    cursor.style.display = 'block';
+                    cursor.style.left = `${browserX + cameraRect.width}px`;
+                    cursor.style.top = `${browserY}px`;
+                    
+                    return { x: browserX, y: browserY, inBrowser: true };
+                }
             }
             
-            // Invertir X para el efecto espejo (coherente con CSS transform)
-            x = window.innerWidth - x;
+            // Ocultar cursor si está fuera del navegador
+            cursor.style.display = 'none';
+            return { x: absoluteX, y: absoluteY, inBrowser: false };
+        }
+        
+        // Ejecutar acciones basadas en gestos
+        function executeGestureAction(gesture, cursorPos) {
+            gestureIndicator.textContent = `Gesto: ${gesture}`;
             
-            return { x, y };
-        }
-
-        // Actualizar mensaje de estado
-        function updateStatus(message) {
-            statusElement.textContent = message;
-        }
-
-        // Mostrar mensaje de error
-        function showError(message) {
-            loader.classList.add("hidden");
-            errorElement.textContent = message;
-            errorElement.style.display = "block";
+            if (!cursorPos.inBrowser) return;
             
-            console.error(message);
+            switch (gesture) {
+                case 'click':
+                    if (!clickCooldown) {
+                        // Ejecutar clic
+                        clickBrowserElement(cursorPos.x, cursorPos.y);
+                        clickCooldown = true;
+                        setTimeout(() => { clickCooldown = false; }, 500);
+                    }
+                    break;
+                
+                case 'scroll-up':
+                    if (!scrollCooldown) {
+                        browserIframe.contentWindow.scrollBy(0, -50);
+                        scrollCooldown = true;
+                        setTimeout(() => { scrollCooldown = false; }, 100);
+                    }
+                    break;
+                
+                case 'scroll-down':
+                    if (!scrollCooldown) {
+                        browserIframe.contentWindow.scrollBy(0, 50);
+                        scrollCooldown = true;
+                        setTimeout(() => { scrollCooldown = false; }, 100);
+                    }
+                    break;
+            }
         }
-
-        // Restablecer posición del navegador
-        function resetBrowserPosition() {
-            browserFrame.style.top = defaultBrowserPosition.top;
-            browserFrame.style.left = defaultBrowserPosition.left;
-            browserFrame.style.width = defaultBrowserPosition.width;
-            browserFrame.style.height = defaultBrowserPosition.height;
-            browserFrame.style.transform = `scale(${defaultBrowserPosition.scale})`;
+        
+        // Simular clic en un elemento del iframe
+        function clickBrowserElement(x, y) {
+            const browserControlsHeight = document.getElementById('browser-controls').offsetHeight;
+            const iframe = document.getElementById('browser-iframe');
             
-            updateStatus("Posición del navegador restablecida");
+            // Ajustar Y por la altura de los controles
+            if (y > browserControlsHeight) {
+                try {
+                    // Intentar hacer clic dentro del iframe
+                    const iframeY = y - browserControlsHeight;
+                    
+                    // Cambiar cursor a estilo de clic
+                    cursor.style.backgroundColor = 'rgba(255, 0, 0, 1)';
+                    setTimeout(() => {
+                        cursor.style.backgroundColor = 'rgba(255, 0, 0, 0.7)';
+                    }, 200);
+                    
+                    // Nota: Los iframes tienen restricciones de seguridad.
+                    // Este método no funcionará para todos los sitios debido a
+                    // Same-Origin Policy. Se necesitaría una extensión de navegador
+                    // para superar esta limitación.
+                    console.log(`Clic en: ${x}, ${iframeY}`);
+                    
+                    // Alternativamente, podríamos simular eventos a través de postMessage
+                    // si el iframe está configurado para aceptar mensajes.
+                } catch (error) {
+                    console.error('Error al hacer clic en iframe:', error);
+                }
+            } else {
+                // Clic en los controles del navegador
+                const element = document.elementFromPoint(x + 
+                    document.getElementById('camera-container').offsetWidth, y);
+                if (element) {
+                    element.click();
+                }
+            }
         }
-
-        // Iniciar la aplicación
-        initApp();
+        
+        // Detectar manos continuamente
+        async function detectHands(model) {
+            try {
+                // Limpiar canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Detectar manos en el video
+                const hands = await model.estimateHands(video);
+                
+                if (hands && hands.length > 0) {
+                    // Hay mano detectada
+                    const hand = hands[0];
+                    
+                    // Dibujar puntos de la mano en el canvas
+                    drawHand(hand.keypoints, ctx);
+                    
+                    // Detectar gestos
+                    const gesture = detectGesture(hand);
+                    currentGesture = gesture;
+                    
+                    // Actualizar posición del cursor (dedo índice)
+                    const indexFinger = hand.keypoints[8];
+                    const videoWidth = video.videoWidth;
+                    const videoHeight = video.videoHeight;
+                    const displayWidth = video.clientWidth;
+                    const displayHeight = video.clientHeight;
+                    
+                    // Calcular posición ajustada para la escala
+                    const adjustedX = indexFinger.x * displayWidth / videoWidth;
+                    const adjustedY = indexFinger.y * displayHeight / videoHeight;
+                    
+                    // Actualizar cursor y ejecutar acción
+                    const cursorPos = updateCursor(adjustedX, adjustedY);
+                    executeGestureAction(gesture, cursorPos);
+                    
+                    // Guardar posición para comparación con el siguiente frame
+                    lastPose = {
+                        wrist: { x: hand.keypoints[0].x, y: hand.keypoints[0].y }
+                    };
+                    
+                    status.textContent = "Mano detectada";
+                } else {
+                    // No hay mano detectada
+                    cursor.style.display = 'none';
+                    status.textContent = "No se detecta mano";
+                    gestureIndicator.textContent = "Gesto: Ninguno";
+                    lastPose = null;
+                }
+            } catch (error) {
+                console.error('Error en detección:', error);
+                status.textContent = "Error en detección";
+            }
+            
+            // Continuar el ciclo de detección
+            requestAnimationFrame(() => detectHands(model));
+        }
+        
+        // Dibujar la mano en el canvas
+        function drawHand(keypoints, ctx) {
+            // Dibujar puntos
+            for (let i = 0; i < keypoints.length; i++) {
+                const keypoint = keypoints[i];
+                
+                ctx.beginPath();
+                ctx.arc(keypoint.x, keypoint.y, 5, 0, 2 * Math.PI);
+                ctx.fillStyle = i === 8 ? 'red' : 'cyan'; // Índice en rojo
+                ctx.fill();
+                ctx.stroke();
+            }
+            
+            // Dibujar conexiones
+            const connections = [
+                [0, 1], [1, 2], [2, 3], [3, 4], // pulgar
+                [0, 5], [5, 6], [6, 7], [7, 8], // índice
+                [0, 9], [9, 10], [10, 11], [11, 12], // medio
+                [0, 13], [13, 14], [14, 15], [15, 16], // anular
+                [0, 17], [17, 18], [18, 19], [19, 20], // meñique
+                [5, 9], [9, 13], [13, 17] // palma
+            ];
+            
+            for (const connection of connections) {
+                const from = keypoints[connection[0]];
+                const to = keypoints[connection[1]];
+                
+                ctx.beginPath();
+                ctx.moveTo(from.x, from.y);
+                ctx.lineTo(to.x, to.y);
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+        
+        // Iniciar la aplicación cuando se cargue la página
+        window.onload = init;
     </script>
-
 </body>
 </html>
