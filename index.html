@@ -3,183 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tarjeta Interactiva</title>
+    <title>Interfaz con Tracking de Manos y Ojos</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/facemesh"></script>
     <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+        * {
             margin: 0;
-            background-color: #f0f0f0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: black;
             font-family: Arial, sans-serif;
         }
-        .card-container {
-            perspective: 1000px;
-            width: 300px;
-            height: 430px;
-        }
-        .card {
+
+        /* Video en pantalla completa */
+        #video {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            position: relative;
-            transform-style: preserve-3d;
-            transition: transform 0.6s;
-            cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            object-fit: cover;
+            z-index: -1;
         }
-        .card-front, .card-back {
+
+        /* Cuadros de tracking */
+        .tracking-box {
             position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-radius: 10px;
-            background-color: white;
-            border: 2px solid #e0e0e0;
+            border: 2px solid cyan;
+            width: 50px;
+            height: 50px;
+            pointer-events: none;
         }
-        .card-back {
-            transform: rotateY(180deg);
-        }
-        .card.flipped {
-            transform: rotateY(180deg);
-        }
-        #fileInputFront, #fileInputBack {
-            display: none;
-        }
-        .image-placeholder {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-        .upload-btn {
+
+        /* Iframe del navegador */
+        #browserFrame {
             position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 5px 10px;
-            background-color: #4CAF50;
-            color: white;
+            top: 20%;
+            left: 20%;
+            width: 60%;
+            height: 60%;
             border: none;
-            border-radius: 5px;
-            cursor: pointer;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            transition: transform 0.1s ease;
         }
     </style>
 </head>
 <body>
-    <div class="card-container">
-        <div class="card" id="card">
-            <div class="card-front">
-                <img id="imageFront" src="/api/placeholder/300/430" alt="Cara A" class="image-placeholder">
-                <label for="fileInputFront" class="upload-btn">Subir Cara A</label>
-                <input type="file" id="fileInputFront" accept="image/*">
-            </div>
-            <div class="card-back">
-                <img id="imageBack" src="/api/placeholder/300/430" alt="Cara B" class="image-placeholder">
-                <label for="fileInputBack" class="upload-btn">Subir Cara B</label>
-                <input type="file" id="fileInputBack" accept="image/*">
-            </div>
-        </div>
-    </div>
+
+    <!-- Video en el fondo -->
+    <video id="video" autoplay playsinline></video>
+
+    <!-- Cuadros de tracking -->
+    <div id="eyeBox" class="tracking-box"></div>
+    <div id="handBox" class="tracking-box"></div>
+
+    <!-- Navegador flotante -->
+    <iframe id="browserFrame" src="https://www.google.com"></iframe>
 
     <script>
-        const card = document.getElementById('card');
-        const fileInputFront = document.getElementById('fileInputFront');
-        const fileInputBack = document.getElementById('fileInputBack');
-        const imageFront = document.getElementById('imageFront');
-        const imageBack = document.getElementById('imageBack');
+        let video = document.getElementById("video");
+        let eyeBox = document.getElementById("eyeBox");
+        let handBox = document.getElementById("handBox");
+        let browserFrame = document.getElementById("browserFrame");
 
-        // Rotación de la tarjeta
-        let isDragging = false;
-        let startX, startY;
-        let currentRotationX = 0;
-        let currentRotationY = 0;
-
-        function rotateCard(deltaX, deltaY) {
-            currentRotationY += deltaX * 0.5;
-            currentRotationX -= deltaY * 0.5;
-            
-            // Limitar rotación
-            currentRotationX = Math.max(-45, Math.min(45, currentRotationX));
-            
-            card.style.transform = `rotateX(${currentRotationX}deg) rotateY(${currentRotationY}deg)`;
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+            } catch (error) {
+                console.error("No se pudo acceder a la cámara:", error);
+            }
         }
 
-        // Eventos para ratón
-        card.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-        });
+        startCamera();
 
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            
-            const deltaX = e.clientX - startX;
-            const deltaY = e.clientY - startY;
-            
-            rotateCard(deltaX, deltaY);
-            
-            startX = e.clientX;
-            startY = e.clientY;
-        });
+        // Cargar modelos de MediaPipe
+        async function loadModels() {
+            const handDetector = await handPoseDetection.createDetector(handPoseDetection.SupportedModels.MediaPipeHands, {
+                runtime: 'mediapipe',
+                solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/hands'
+            });
 
-        document.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
+            const faceMesh = await facemesh.load();
 
-        // Eventos táctiles para móviles
-        card.addEventListener('touchstart', (e) => {
-            isDragging = true;
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-        });
+            detectLandmarks(handDetector, faceMesh);
+        }
 
-        document.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            
-            const deltaX = e.touches[0].clientX - startX;
-            const deltaY = e.touches[0].clientY - startY;
-            
-            rotateCard(deltaX, deltaY);
-            
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-        });
+        async function detectLandmarks(handDetector, faceMesh) {
+            const canvas = document.createElement("canvas");
+            document.body.appendChild(canvas);
+            const ctx = canvas.getContext("2d");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
 
-        document.addEventListener('touchend', () => {
-            isDragging = false;
-        });
+            async function frameProcessing() {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Detectar manos
+                const hands = await handDetector.estimateHands(video, { flipHorizontal: true });
 
-        // Voltear tarjeta al hacer clic
-        card.addEventListener('click', () => {
-            card.classList.toggle('flipped');
-        });
+                if (hands.length > 0) {
+                    let hand = hands[0];
+                    let indexFinger = hand.keypoints[8]; // Dedo índice
+                    let thumb = hand.keypoints[4]; // Pulgar
 
-        // Subir imágenes
-        fileInputFront.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    imageFront.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
+                    // Dibujar cuadro en la mano
+                    handBox.style.left = `${indexFinger.x}px`;
+                    handBox.style.top = `${indexFinger.y}px`;
+
+                    // Detectar pellizco (índice y pulgar cerca)
+                    let pinchDistance = Math.sqrt(
+                        Math.pow(indexFinger.x - thumb.x, 2) + Math.pow(indexFinger.y - thumb.y, 2)
+                    );
+
+                    if (pinchDistance < 30) { // Si se pellizca
+                        browserFrame.style.left = `${indexFinger.x - browserFrame.clientWidth / 2}px`;
+                        browserFrame.style.top = `${indexFinger.y - browserFrame.clientHeight / 2}px`;
+                    }
+                }
+
+                // Detectar ojos
+                const faces = await faceMesh.estimateFaces({ input: video });
+
+                if (faces.length > 0) {
+                    let eye = faces[0].scaledMesh[468]; // Punto de la pupila
+                    eyeBox.style.left = `${eye[0]}px`;
+                    eyeBox.style.top = `${eye[1]}px`;
+                }
+
+                requestAnimationFrame(frameProcessing);
             }
-        });
 
-        fileInputBack.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    imageBack.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+            frameProcessing();
+        }
+
+        loadModels();
     </script>
+
 </body>
 </html>
