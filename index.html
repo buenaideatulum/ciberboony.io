@@ -2,41 +2,98 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Califica tu experiencia</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --primary: #fbbc04; /* Amarillo Google */
+      --bg: #fff;
+      --text: #222;
+      --muted: #888;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: sans-serif;
-      text-align: center;
-      padding-top: 60px;
-      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 2rem;
     }
+
     h1 {
-      color: #333;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      text-align: center;
     }
+
+    p {
+      font-size: 1rem;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
     .stars {
       display: flex;
       justify-content: center;
-      font-size: 60px;
-      margin-top: 30px;
+      gap: 1rem;
+      font-size: 2.5rem;
     }
+
     .star {
       cursor: pointer;
-      transition: transform 0.2s;
+      transition: transform 0.2s ease;
+      color: #ccc;
     }
-    .star:hover {
+
+    .star:hover,
+    .star:focus {
+      color: var(--primary);
       transform: scale(1.2);
+    }
+
+    footer {
+      margin-top: 3rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media (max-width: 400px) {
+      .stars {
+        font-size: 2rem;
+        gap: 0.7rem;
+      }
     }
   </style>
 </head>
 <body>
   <h1>¿Cómo fue tu experiencia?</h1>
+  <p>Califícanos tocando las estrellas</p>
+
   <div class="stars">
-    <span class="star" onclick="rate(1)">⭐</span>
-    <span class="star" onclick="rate(2)">⭐</span>
-    <span class="star" onclick="rate(3)">⭐</span>
-    <span class="star" onclick="rate(4)">⭐</span>
-    <span class="star" onclick="rate(5)">⭐</span>
+    <span class="star" onclick="rate(1)">★</span>
+    <span class="star" onclick="rate(2)">★</span>
+    <span class="star" onclick="rate(3)">★</span>
+    <span class="star" onclick="rate(4)">★</span>
+    <span class="star" onclick="rate(5)">★</span>
   </div>
+
+  <footer>
+    Tu opinión nos ayuda a mejorar 💛
+  </footer>
 
   <script>
     function rate(star) {
