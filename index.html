@@ -54,13 +54,16 @@
 
     .star {
       cursor: pointer;
-      transition: transform 0.2s ease;
+      transition: transform 0.2s ease, color 0.2s ease;
       color: #ccc;
+    }
+
+    .star.selected {
+      color: var(--primary);
     }
 
     .star:hover,
     .star:focus {
-      color: var(--primary);
       transform: scale(1.2);
     }
 
@@ -96,12 +99,25 @@
   </footer>
 
   <script>
-    function rate(star) {
-      if (star <= 3) {
-        window.location.href = "https://forms.gle/DCJ1YSbe6h6c8sSx9";
-      } else {
-        window.location.href = "https://g.page/r/CfMoIh9zqu4UEBM/review";
-      }
+    const stars = document.querySelectorAll('.star');
+
+    function rate(starIndex) {
+      stars.forEach((star, index) => {
+        if (index < starIndex) {
+          star.classList.add('selected');
+        } else {
+          star.classList.remove('selected');
+        }
+      });
+
+      // Esperar 0.5s para ver la animación antes de redirigir
+      setTimeout(() => {
+        if (starIndex <= 3) {
+          window.location.href = "https://forms.gle/DCJ1YSbe6h6c8sSx9";
+        } else {
+          window.location.href = "https://g.page/r/CfMoIh9zqu4UEBM/review";
+        }
+      }, 200);
     }
   </script>
 </body>
