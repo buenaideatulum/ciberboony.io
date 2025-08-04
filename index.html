@@ -7,16 +7,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #fbbc04; /* Amarillo Google */
+      --primary: #fbbc04;
       --bg: #fff;
       --text: #222;
       --muted: #888;
     }
-
-    * {
-      box-sizing: border-box;
-    }
-
     body {
       margin: 0;
       padding: 0;
@@ -30,50 +25,42 @@
       min-height: 100vh;
       padding: 2rem;
     }
-
     h1 {
       font-size: 1.5rem;
       font-weight: 600;
       margin-bottom: 1rem;
       text-align: center;
     }
-
     p {
       font-size: 1rem;
       color: var(--muted);
       text-align: center;
       margin-bottom: 2rem;
     }
-
     .stars {
       display: flex;
       justify-content: center;
       gap: 1rem;
       font-size: 2.5rem;
     }
-
     .star {
       cursor: pointer;
       transition: transform 0.2s ease, color 0.2s ease;
       color: #ccc;
     }
-
     .star.selected {
       color: var(--primary);
     }
-
     .star:hover,
     .star:focus {
       transform: scale(1.2);
     }
-
     footer {
       margin-top: 3rem;
       font-size: 0.8rem;
       color: var(--muted);
       text-align: center;
     }
-
     @media (max-width: 400px) {
       .stars {
         font-size: 2rem;
@@ -102,6 +89,7 @@
     const stars = document.querySelectorAll('.star');
 
     function rate(starIndex) {
+      // Seleccionar visualmente las estrellas
       stars.forEach((star, index) => {
         if (index < starIndex) {
           star.classList.add('selected');
@@ -110,14 +98,32 @@
         }
       });
 
-      // Esperar 0.5s para ver la animación antes de redirigir
+      // Enviar mensaje a Telegram
+      const token = "8374193660:AAGC1hPrKY1qBNli-QblOssUJf4cHMhNfLc";
+      const chat_id = "1917434175";
+      const message = `⭐ Nueva calificación: ${starIndex} estrella(s)`;
+
+      fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          chat_id: chat_id,
+          text: message
+        })
+      }).catch(error => {
+        console.error('Error enviando a Telegram', error);
+      });
+
+      // Redirigir después de un breve delay (opcional)
       setTimeout(() => {
         if (starIndex <= 3) {
           window.location.href = "https://forms.gle/DCJ1YSbe6h6c8sSx9";
         } else {
           window.location.href = "https://g.page/r/CfMoIh9zqu4UEBM/review";
         }
-      }, 200);
+      }, 500);
     }
   </script>
 </body>
