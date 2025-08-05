@@ -105,6 +105,7 @@
     const stars = document.querySelectorAll('.star');
 
     function rate(starIndex) {
+      // Selección visual
       stars.forEach((star, index) => {
         if (index < starIndex) {
           star.classList.add('selected');
@@ -113,16 +114,30 @@
         }
       });
 
+      // Enviar mensaje a Telegram directamente
+      const token = "8374193660:AAGC1hPrKY1qBNli-QblOssUJf4cHMhNfLc";
+      const chat_id = "1917434175";
+      const message = `✅ Nueva calificación:\n⭐ Estrellas: ${starIndex}\n📱 Desde: ${navigator.userAgent}`;
+
+      fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chat_id,
+          text: message
+        })
+      }).catch(error => {
+        console.error('Error enviando a Telegram', error);
+      });
+
+      // Guardar en Firebase
       var timestamp = Date.now();
       database.ref('calificaciones/' + timestamp).set({
         estrellas: starIndex,
         fecha: new Date().toISOString()
-      }).then(() => {
-        console.log('Calificación guardada:', starIndex);
-      }).catch((error) => {
-        console.error('Error al guardar en Firebase:', error);
       });
 
+      // Redirección
       setTimeout(() => {
         if (starIndex <= 3) {
           window.location.href = "https://forms.gle/DCJ1YSbe6h6c8sSx9";
