@@ -89,7 +89,6 @@
     const stars = document.querySelectorAll('.star');
 
     function rate(starIndex) {
-      // Seleccionar visualmente las estrellas
       stars.forEach((star, index) => {
         if (index < starIndex) {
           star.classList.add('selected');
@@ -98,25 +97,19 @@
         }
       });
 
-      // Enviar mensaje a Telegram
-      const token = "8374193660:AAGC1hPrKY1qBNli-QblOssUJf4cHMhNfLc";
-      const chat_id = "1917434175";
+      const webhookURL = "https://script.google.com/macros/s/AKfycbz7l61wUT-Zu1GWRdAS9msbqC6TR6-Hs8YO_WwI3GNGM4jZQ4rKSQeo3fQJl4Qr27soRw/exec";
       const message = `⭐ Nueva calificación: ${starIndex} estrella(s)`;
 
-      fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      fetch(webhookURL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          chat_id: chat_id,
-          text: message
-        })
+        body: JSON.stringify({ message: message })
       }).catch(error => {
-        console.error('Error enviando a Telegram', error);
+        console.error('Error enviando al Webhook', error);
       });
 
-      // Redirigir después de un breve delay (opcional)
       setTimeout(() => {
         if (starIndex <= 3) {
           window.location.href = "https://forms.gle/DCJ1YSbe6h6c8sSx9";
