@@ -5,54 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Califica tu experiencia</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <script type="module">
-    // Importar SDK Firebase Modular v9
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyC1jYCINtfyrdc2-0sOEe-LkJxpck1ZEGU",
-      authDomain: "nfc-calificaciones.firebaseapp.com",
-      databaseURL: "https://nfc-calificaciones-default-rtdb.firebaseio.com",
-      projectId: "nfc-calificaciones",
-      storageBucket: "nfc-calificaciones.appspot.com",
-      messagingSenderId: "401919272910",
-      appId: "1:401919272910:web:40db9a3ce50a6a2b48ad9f",
-      measurementId: "G-8PQW1W9GQW"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
-
-    window.rate = function(starIndex) {
-      const stars = document.querySelectorAll('.star');
-      stars.forEach((star, index) => {
-        if (index < starIndex) {
-          star.classList.add('selected');
-        } else {
-          star.classList.remove('selected');
-        }
-      });
-
-      const timestamp = Date.now();
-      set(ref(database, 'calificaciones/' + timestamp), {
-        estrellas: starIndex,
-        fecha: new Date().toISOString()
-      }).then(() => {
-        console.log('Calificación guardada:', starIndex);
-      }).catch((error) => {
-        console.error('Error al guardar:', error);
-      });
-
-      setTimeout(() => {
-        if (starIndex <= 3) {
-          window.location.href = "https://forms.gle/DCJ1YSbe6h6c8sSx9";
-        } else {
-          window.location.href = "https://g.page/r/CfMoIh9zqu4UEBM/review";
-        }
-      }, 500);
-    }
-  </script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <style>
     :root {
       --primary: #fbbc04;
@@ -132,5 +86,51 @@
   <footer>
     Tu opinión nos ayuda a mejorar 💛
   </footer>
+
+  <script>
+    // Configuración Firebase
+    var firebaseConfig = {
+      apiKey: "AIzaSyC1jYCINtfyrdc2-0sOEe-LkJxpck1ZEGU",
+      authDomain: "nfc-calificaciones.firebaseapp.com",
+      databaseURL: "https://nfc-calificaciones-default-rtdb.firebaseio.com",
+      projectId: "nfc-calificaciones",
+      storageBucket: "nfc-calificaciones.appspot.com",
+      messagingSenderId: "401919272910",
+      appId: "1:401919272910:web:40db9a3ce50a6a2b48ad9f",
+      measurementId: "G-8PQW1W9GQW"
+    };
+    firebase.initializeApp(firebaseConfig);
+    var database = firebase.database();
+
+    const stars = document.querySelectorAll('.star');
+
+    function rate(starIndex) {
+      stars.forEach((star, index) => {
+        if (index < starIndex) {
+          star.classList.add('selected');
+        } else {
+          star.classList.remove('selected');
+        }
+      });
+
+      var timestamp = Date.now();
+      database.ref('calificaciones/' + timestamp).set({
+        estrellas: starIndex,
+        fecha: new Date().toISOString()
+      }).then(() => {
+        console.log('Calificación guardada:', starIndex);
+      }).catch((error) => {
+        console.error('Error al guardar en Firebase:', error);
+      });
+
+      setTimeout(() => {
+        if (starIndex <= 3) {
+          window.location.href = "https://forms.gle/DCJ1YSbe6h6c8sSx9";
+        } else {
+          window.location.href = "https://g.page/r/CfMoIh9zqu4UEBM/review";
+        }
+      }, 500);
+    }
+  </script>
 </body>
 </html>
