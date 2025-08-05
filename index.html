@@ -104,6 +104,16 @@
 
     const stars = document.querySelectorAll('.star');
 
+    function getDeviceName() {
+      const ua = navigator.userAgent;
+      if (/iPhone/i.test(ua)) return "iPhone";
+      if (/iPad/i.test(ua)) return "iPad";
+      if (/Android/i.test(ua)) return "Android";
+      if (/Windows/i.test(ua)) return "Windows PC";
+      if (/Macintosh/i.test(ua)) return "Mac";
+      return "Otro dispositivo";
+    }
+
     function rate(starIndex) {
       // Selección visual
       stars.forEach((star, index) => {
@@ -114,10 +124,16 @@
         }
       });
 
-      // Enviar mensaje a Telegram directamente
+      // Detectar el dispositivo
+      const device = getDeviceName();
+
+      // Icono según calificación
+      const icon = (starIndex <= 3) ? "❌" : "✅";
+
+      // Enviar mensaje a Telegram
       const token = "8374193660:AAGC1hPrKY1qBNli-QblOssUJf4cHMhNfLc";
       const chat_id = "1917434175";
-      const message = `✅ Nueva calificación:\n⭐ Estrellas: ${starIndex}\n📱 Desde: ${navigator.userAgent}`;
+      const message = `${icon} Nueva calificación:\n⭐ Estrellas: ${starIndex}\n📱 Desde: ${device}`;
 
       fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: 'POST',
@@ -134,7 +150,8 @@
       var timestamp = Date.now();
       database.ref('calificaciones/' + timestamp).set({
         estrellas: starIndex,
-        fecha: new Date().toISOString()
+        fecha: new Date().toISOString(),
+        dispositivo: device
       });
 
       // Redirección
