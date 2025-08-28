@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Califica tu experiencia</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <style>
+    :root {
+      --primary: #fbbc04;
+      --bg: #fff;
+      --text: #222;
+      --muted: #888;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    p {
+      font-size: 1rem;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .stars {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      font-size: 2.5rem;
+    }
+    .star {
+      cursor: pointer;
+      transition: transform 0.2s ease, color 0.2s ease;
+      color: #ccc;
+    }
+    .star.selected {
+      color: var(--primary);
+    }
+    .star:hover,
+    .star:focus {
+      transform: scale(1.2);
+    }
+    footer {
+      margin-top: 3rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    @media (max-width: 400px) {
+      .stars {
+        font-size: 2rem;
+        gap: 0.7rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>¿Cómo fue tu experiencia?</h1>
+  <p>Califícanos tocando las estrellas</p>
+
+  <div class="stars">
+    <span class="star" onclick="rate(1)">★</span>
+    <span class="star" onclick="rate(2)">★</span>
+    <span class="star" onclick="rate(3)">★</span>
+    <span class="star" onclick="rate(4)">★</span>
+    <span class="star" onclick="rate(5)">★</span>
+  </div>
+
+  <footer>
+    Tu opinión nos ayuda a mejorar 💛
+  </footer>
+
+  <script>
+    // Configuración Firebase
+    var firebaseConfig = {
+      apiKey: "AIzaSyC1jYCINtfyrdc2-0sOEe-LkJxpck1ZEGU",
+      authDomain: "nfc-calificaciones.firebaseapp.com",
+      databaseURL: "https://nfc-calificaciones-default-rtdb.firebaseio.com",
+      projectId: "nfc-calificaciones",
+      storageBucket: "nfc-calificaciones.appspot.com",
+      messagingSenderId: "401919272910",
+      appId: "1:401919272910:web:40db9a3ce50a6a2b48ad9f",
+      measurementId: "G-8PQW1W9GQW"
+    };
+    firebase.initializeApp(firebaseConfig);
+    var database = firebase.database();
+
+    const stars = document.querySelectorAll('.star');
+
+    function getDeviceName() {
+      const ua = navigator.userAgent;
+      if (/iPhone/i.test(ua)) return "iPhone";
+      if (/iPad/i.test(ua)) return "iPad";
+      if (/Android/i.test(ua)) return "Android";
+      if (/Windows/i.test(ua)) return "Windows PC";
+      if (/Macintosh/i.test(ua)) return "Mac";
+      return "Otro dispositivo";
+    }
+
+    function rate(starIndex) {
+      // Selección visual
+      stars.forEach((star, index) => {
+        if (index < starIndex) {
+          star.classList.add('selected');
+        } else {
+          star.classList.remove('selected');
+        }
+      });
+
+      // Detectar el dispositivo
+      const device = getDeviceName();
+
+      // Icono según calificación
+      const icon = (starIndex <= 3) ? "❌" : "✅";
+
+      // Enviar mensaje a Telegram
+      const token = "8374193660:AAGC1hPrKY1qBNli-QblOssUJf4cHMhNfLc";
+      const chat_id = "1917434175";
+      const message = `${icon} Nueva calificación:\n⭐ Estrellas: ${starIndex}\n📱 Desde: ${device}`;
+
+      fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chat_id,
+          text: message
+        })
+      }).catch(error => {
+        console.error('Error enviando a Telegram', error);
+      });
+
+      // Guardar en Firebase
+      var timestamp = Date.now();
+      database.ref('calificaciones/' + timestamp).set({
+        estrellas: starIndex,
+        fecha: new Date().toISOString(),
+        dispositivo: device
+      });
+
+      // Redirección
+      setTimeout(() => {
+        if (starIndex <= 3) {
+          window.location.href = "https://forms.gle/DCJ1YSbe6h6c8sSx9";
+        } else {
+          window.location.href = "https://g.page/r/CfMoIh9zqu4UEBM/review";
+        }
+      }, 500);
+    }
+  </script>
+</body>
+</html>
